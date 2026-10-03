@@ -1,7 +1,7 @@
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 
 // ANSI Color Codes for enhanced terminal output
@@ -29,7 +29,7 @@ class Process implements Runnable {
     private int burstTime; // Total time the process requires to complete (in milliseconds)
     private int timeQuantum; // Time slice (time quantum) allowed per CPU access (in milliseconds)
     private int remainingTime; // Time left for the process to finish its execution
-
+    private int priority;// Feature 1: Add a random priority from 1 to 10 for each process
     // Constructor to initialize the process with name, burst time, and time quantum
     public Process(String name, int burstTime, int timeQuantum) {
         this.name = name;
@@ -136,7 +136,14 @@ class Process implements Runnable {
     public int getRemainingTime() {
         return remainingTime;
     }
+// Feature 1: Provide access to the process priority
+public int getPriority() {
+    return priority;
+}
 
+public void setPriority(int priority) {
+    this.priority = priority;
+}
     // Check if the process has finished (i.e., no remaining time)
     public boolean isFinished() {
         return remainingTime <= 0;
@@ -198,7 +205,8 @@ public class SchedulerSimulation {
             
             // Create a new process object with a unique name, burst time, and the defined time quantum
             Process process = new Process("P" + i, burstTime, timeQuantum);
-            
+            // Feature 1: Assign a random priority from 1 to 10 using the seeded random generator
+        process.setPriority(1 + random.nextInt(10));
             // Add the process to the ready queue and the map
             addProcessToQueue(process, processQueue, processMap);
         }
@@ -291,9 +299,11 @@ public class SchedulerSimulation {
         processMap.put(thread, process);
         
         // Print a message indicating the process has entered the ready queue
-        System.out.println(Colors.BLUE + "  ➕ " + Colors.BOLD + Colors.CYAN + process.getName() + 
-                          Colors.RESET + Colors.BLUE + " added to ready queue" + Colors.RESET + 
-                          " │ Burst time: " + Colors.YELLOW + process.getBurstTime() + "ms" + 
-                          Colors.RESET);
+       // Feature 1: Display the process priority when it enters the ready queue
+System.out.println(Colors.BLUE + "  ➕ " + Colors.BOLD + Colors.CYAN + process.getName() + 
+                  Colors.RESET + Colors.BLUE + " added to ready queue" + Colors.RESET + 
+                  " │ Priority: " + Colors.BRIGHT_YELLOW + process.getPriority() + Colors.RESET +
+                  " │ Burst time: " + Colors.YELLOW + process.getBurstTime() + "ms" + 
+                  Colors.RESET);
     }
 }
