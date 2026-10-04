@@ -36,6 +36,7 @@ class Process implements Runnable {
         this.burstTime = burstTime;
         this.timeQuantum = timeQuantum;
         this.remainingTime = burstTime; // Initially, remaining time is equal to the burst time
+       
     }
 
     // This method will be called when the thread for this process is started
@@ -151,13 +152,15 @@ public void setPriority(int priority) {
 }
 
 public class SchedulerSimulation {
+// Feature 2: Count every time the scheduler starts a process thread
+private static int contextSwitchCount = 0;
     public static void main(String[] args) {
         // ⚠️ IMPORTANT: Put your student ID here to seed the random number generator
         // This makes your output unique to you - DO NOT forget to change this!
         int studentID = 446051371;  // ← CHANGE THIS TO YOUR ACTUAL STUDENT ID
         
         Random random = new Random(studentID);
-        
+    
         // Define the time quantum in milliseconds (the maximum time a process gets in one round)
         // Choose a random number between 2000 and 5000 ms with a step of 1000 ms
         int timeQuantum = 2000 + random.nextInt(4) * 1000; // Random: 2000, 3000, 4000, or 5000
@@ -243,7 +246,8 @@ public class SchedulerSimulation {
             }
             System.out.println(Colors.BRIGHT_WHITE + "]" + Colors.RESET);
             System.out.println(Colors.BOLD + Colors.MAGENTA + "└" + "─".repeat(79) + Colors.RESET + "\n");
-            
+            // Feature 2: Increment the context switch counter when a process starts running
+            contextSwitchCount++;
             // Start the thread, which will run the process for one time quantum
             currentThread.start();
             
@@ -284,6 +288,8 @@ public class SchedulerSimulation {
         System.out.println(Colors.BOLD + Colors.BRIGHT_GREEN + 
                           "╚════════════════════════════════════════════════════════════════════════════════╝" + 
                           Colors.RESET + "\n");
+        // Feature 2: Display the total number of context switches
+        System.out.println(Colors.BOLD + Colors.BRIGHT_YELLOW + "Total context switches: " + contextSwitchCount + Colors.RESET);
     }
     
     // Method to add a process to the queue and map, while printing a "ready" message
