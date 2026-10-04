@@ -30,12 +30,20 @@ class Process implements Runnable {
     private int timeQuantum; // Time slice (time quantum) allowed per CPU access (in milliseconds)
     private int remainingTime; // Time left for the process to finish its execution
     private int priority;// Feature 1: Add a random priority from 1 to 10 for each process
+    // Feature 3: Track creation time and the total time spent waiting in the ready queue
+    private long creationTime;
+    private long readyQueueEntryTime;
+    private long totalWaitingTime;
     // Constructor to initialize the process with name, burst time, and time quantum
     public Process(String name, int burstTime, int timeQuantum) {
         this.name = name;
         this.burstTime = burstTime;
         this.timeQuantum = timeQuantum;
         this.remainingTime = burstTime; // Initially, remaining time is equal to the burst time
+        // Feature 3: Record when the process is created and initialize waiting-time tracking
+        this.creationTime = System.currentTimeMillis();
+        this.readyQueueEntryTime = this.creationTime;
+        this.totalWaitingTime = 0;
        
     }
 
@@ -145,7 +153,28 @@ public int getPriority() {
 public void setPriority(int priority) {
     this.priority = priority;
 }
-    // Check if the process has finished (i.e., no remaining time)
+// Feature 3: Record the time when the process enters the ready queue
+public void markReadyQueueEntry() {
+    this.readyQueueEntryTime = System.currentTimeMillis();
+}
+
+// Feature 3: Add the latest ready-queue waiting interval to the total waiting time
+public void updateWaitingTime() {
+    this.totalWaitingTime += System.currentTimeMillis() - this.readyQueueEntryTime;
+}
+
+// Feature 3: Return the accumulated waiting time in milliseconds
+public long getWaitingTime() {
+    return totalWaitingTime;
+}
+
+// Feature 3: Calculate turnaround time as waiting time plus burst time
+public long getTurnaroundTime() {
+    return totalWaitingTime + burstTime;
+}
+
+    
+// Check if the process has finished (i.e., no remaining time)
     public boolean isFinished() {
         return remainingTime <= 0;
     }
@@ -167,6 +196,8 @@ private static int contextSwitchCount = 0;
         
         // Generate random number of processes between 10 and 20
         int numProcesses = 10 + random.nextInt(11); // Random number between 10 and 20
+        // Feature 3: Keep one reference to each process for the final statistics table
+        Process[] allProcesses = new Process[numProcesses];
         
         // Queue to manage processes in a First-In-First-Out (FIFO) order
         Queue<Thread> processQueue = new LinkedList<>();
@@ -210,6 +241,8 @@ private static int contextSwitchCount = 0;
             Process process = new Process("P" + i, burstTime, timeQuantum);
             // Feature 1: Assign a random priority from 1 to 10 using the seeded random generator
         process.setPriority(1 + random.nextInt(10));
+        // Feature 3: Save the process so its final statistics can be printed after scheduling finishes
+            allProcesses[i - 1] = process;
             // Add the process to the ready queue and the map
             addProcessToQueue(process, processQueue, processMap);
         }
@@ -230,6 +263,9 @@ private static int contextSwitchCount = 0;
         while (!processQueue.isEmpty()) {
             // Get the next thread from the queue (FIFO)
             Thread currentThread = processQueue.poll(); // Dequeues the next thread
+            // Feature 3: Stop this ready-queue waiting interval when the process is selected
+          Process runningProcess = processMap.get(currentThread);
+          runningProcess.updateWaitingTime();
             
             // Print the current process queue (list of process IDs in the queue)
             System.out.println(Colors.BOLD + Colors.MAGENTA + "┌─ Ready Queue " + "─".repeat(65) + Colors.RESET);
@@ -290,14 +326,31 @@ private static int contextSwitchCount = 0;
                           Colors.RESET + "\n");
         // Feature 2: Display the total number of context switches
         System.out.println(Colors.BOLD + Colors.BRIGHT_YELLOW + "Total context switches: " + contextSwitchCount + Colors.RESET);
+
+  // Feature 3: Display the final waiting-time and turnaround-time summary table
+System.out.println(Colors.BOLD + Colors.BRIGHT_CYAN +
+                   "PROCESS TIMING SUMMARY" + Colors.RESET);
+
+System.out.printf("%-12s %-15s %-18s %-20s%n",
+                  "Process", "Burst Time", "Waiting Time", "Turnaround Time");
+
+System.out.println("-----------------------------------------------------------------");
+
+for (Process process : allProcesses) {
+    System.out.printf("%-12s %-15s %-18s %-20s%n",
+                      process.getName(),
+                      process.getBurstTime() + "ms",
+                      process.getWaitingTime() + "ms",
+                      process.getTurnaroundTime() + "ms");
     }
-    
+}
     // Method to add a process to the queue and map, while printing a "ready" message
     public static void addProcessToQueue(Process process, Queue<Thread> processQueue, 
                                         Map<Thread, Process> processMap) {
         // Create a new thread to run the process
         Thread thread = new Thread(process);
-        
+        // Feature 3: Record the exact time when the process enters the ready queue
+        process.markReadyQueueEntry();
         // Add the thread to the ready queue
         processQueue.add(thread);
         
